@@ -9,7 +9,7 @@
 		<form method="post">
 			Email
 			<input type="email" name="email" value="example@email.com">
-			<input type="button" name="signup" value="Go!">
+			<input type="submit" name="signup" value="Go!">
 		</form>		
 	</div>
 </body>
@@ -23,22 +23,10 @@
 
 	class Validator
 	{
-		protected $email;
 
-
-
-		public function __construct()
+		public function validateEmail($email)
 		{
-			$this->email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-		}
-
-		public function validateEmail()
-		{
-			if( ! filter_var($this->email, FILTER_VALIDATE_EMAIL))
-
-				throw new Exception("Invalid email");
-
-			else echo "Congratulation! Check your mail to verify your account!";
+			return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 		}
 	}
 
@@ -79,16 +67,21 @@
 
 		public function run()
 		{
-			$this->validator->validateEmail();
+			$email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
 
-			$this->database->//functionNameDatabase();		return false = ok
+			if( ! $this->validator->validateEmail($email))
+			{
+				throw new Exception('The provided email is not valid.');
+			}
 
+			if($this->database->hasUserWithEmail($email))
+			{
+				throw new Exception('This email has been already taken');
+			}
 			
-			if( ! /*functionNameDatabase()*/)
+			$this->notifier->sendWelcomeEmail($email);
 
-				$this->notifier->//functionNameNotifier();
-
-			else throw new Exception("This email is already taken");
+			return 'Your account has been registered successfully!';
 		}
 	}
 
@@ -97,7 +90,7 @@
 
 
 
-	if($_POST['signup'])
+	if(isset($_POST['signup']))
 	{
 		$validator = new Validator();
 
@@ -106,5 +99,7 @@
 		$notifier = new Notifier();
 
 		$controller = new Controller($validator, $database, $notifier);
+
+		echo $controller->run();
 	}
 ?>
